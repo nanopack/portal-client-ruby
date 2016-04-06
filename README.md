@@ -110,6 +110,7 @@ client.add_route({
     domain: 'nanobox.io',           # Domain of the request. Optional. Assumes *
     path: '/',                      # Path of the incoming request
     targets: ['http://192.168.0.2'] # List of locations to forward the request
+    fwdpath: '/',                   # Path to forward to targets (combined with target path)
     page: 'hello world'             # A page to render when Name and Path match (optional)
 })
 ```

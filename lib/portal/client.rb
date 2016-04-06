@@ -116,6 +116,7 @@ class Portal::Client
   #   domain: Domain of the request. Optional. Assumes *
   #   path: Path of the incoming request
   #   targets: List of locations to forward the request
+  #   fwdpath: Path to forward to targets (combined with target path)
   #   page: A page to render when Name and Path match (optional)
   def add_route(route={})
     post '/routes', route
