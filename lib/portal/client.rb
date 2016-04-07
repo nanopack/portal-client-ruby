@@ -35,6 +35,13 @@ class Portal::Client
     post '/services', service
   end
 
+  # Reset the entire list of services.
+  #
+  # services: A list of services following the structure above.
+  def reset_services(services=[])
+    put '/services', services
+  end
+
   # Remove a service
   def remove_service(id)
     delete "/services/#{id}"

@@ -53,6 +53,13 @@ client.add_service({
 })
 ```
 
+Reset all services:
+```ruby
+client.reset_services([
+  # service objects as defined above
+])
+```
+
 Remove a service:
 ```ruby
 client.remove_service(id)
