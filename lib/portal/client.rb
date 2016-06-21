@@ -159,7 +159,7 @@ class Portal::Client
 
   def post(path, payload)
     res = connection.post(path) do |req|
-      req.headers['X-NANOBOX-TOKEN'] = token
+      req.headers['X-AUTH-TOKEN'] = token
       req.body = to_json(payload)
     end
 
@@ -172,7 +172,7 @@ class Portal::Client
 
   def put(path, payload)
     res = connection.put(path) do |req|
-      req.headers['X-NANOBOX-TOKEN'] = token
+      req.headers['X-AUTH-TOKEN'] = token
       req.body = to_json(payload)
     end
 
@@ -185,7 +185,7 @@ class Portal::Client
 
   def delete(path, payload={})
     res = connection.delete(path) do |req|
-      req.headers['X-NANOBOX-TOKEN'] = token
+      req.headers['X-AUTH-TOKEN'] = token
       if payload
         req.body = to_json(payload)
       end
