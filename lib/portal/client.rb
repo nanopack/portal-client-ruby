@@ -147,7 +147,7 @@ class Portal::Client
 
   def get(path)
     res = connection.get(path) do |req|
-      req.headers['X-NANOBOX-TOKEN'] = token
+      req.headers['X-AUTH-TOKEN'] = token
     end
 
     if res.status == 200
