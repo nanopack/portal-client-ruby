@@ -200,9 +200,17 @@ class Portal::Client
 
   def connection
     @connection ||= ::Faraday.new({
-      url: "https://#{host}:8443",
+      url: url,
       :ssl => {:verify => false}
     })
+  end
+  
+  def url
+    if host =~ /:\d+/
+      "https://#{host}"
+    else
+      "https://#{host}:8443"
+    end
   end
 
   def to_json(data)
