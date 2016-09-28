@@ -143,6 +143,43 @@ class Portal::Client
     delete '/routes', route
   end
 
+  # List the registered vips
+  # $ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips
+  # []
+  def vips
+    get '/vips'
+  end
+
+  # Register a new vip with the http router
+  # $ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips \
+  #      -d '{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}'
+  # [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
+  def add_vip(vip={})
+    post '/vips', vip
+  end
+
+  # Reset the registered vips
+  #
+  # vips: A list of vips, following the data above
+  # $ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips \
+  #      -d [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
+  #      -X PUT
+  # [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
+  def reset_vips(vips=[])
+    put '/vips', vips
+  end
+
+  # Remove a vip from the router
+  #
+  # vip: Follows the format above
+  # $ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips \
+  #      -d '{"ip":"192.168.0.100","interface":"eth0"}'
+  #      -X DELETE
+  # {"msg":"Success"}
+  def remove_vip(vip={})
+    delete '/vips', vip
+  end
+
   protected
 
   def get(path)
@@ -204,7 +241,7 @@ class Portal::Client
       :ssl => {:verify => false}
     })
   end
-  
+
   def url
     if host =~ /:\d+/
       "https://#{host}"
