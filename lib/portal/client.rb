@@ -13,12 +13,12 @@ class Portal::Client
 
   # List registered services
   def services
-    get '/services'
+    request :get, '/services'
   end
 
   # Fetch information about a particular service
   def service(id)
-    get "/services/#{id}"
+    request :get, "/services/#{id}"
   end
 
   # Add a service
@@ -32,29 +32,29 @@ class Portal::Client
   #   netmask: How to group clients with persistence to servers
   #   servers: Array of server objects associated to the service (optional)
   def add_service(service={})
-    post '/services', service
+    request :post, '/services', service
   end
 
   # Reset the entire list of services.
   #
   # services: A list of services following the structure above.
   def reset_services(services=[])
-    put '/services', services
+    request :put, '/services', services
   end
 
   # Remove a service
   def remove_service(id)
-    delete "/services/#{id}"
+    request :delete, "/services/#{id}"
   end
 
   # List the servers for a registered service
   def servers(service_id)
-    get "/services/#{service_id}/servers"
+    request :get, "/services/#{service_id}/servers"
   end
 
   # Fetch a single service for a registered service
   def server(service_id, server_id)
-    get "/services/#{service_id}/servers/#{server_id}"
+    request :get, "/services/#{service_id}/servers/#{server_id}"
   end
 
   # Add a server to a service
@@ -68,24 +68,24 @@ class Portal::Client
   #   upper_threshold: Stop sending connections to this server when this number is reached. 0 is no limit.
   #   lower_threshold: Restart sending connections when drains down to this number. 0 is not set.
   def add_server(service_id, server={})
-    post "/services/#{service_id}/servers"
+    request :post, "/services/#{service_id}/servers"
   end
 
   # Reset the list of servers registered to a service
   #
   # servers: A list of servers following the data above
   def reset_servers(service_id, servers=[])
-    put "/services/#{service_id}/servers"
+    request :put, "/services/#{service_id}/servers"
   end
 
   # Remove a server from a registered service
   def remove_server(service_id, server_id)
-    delete "/services/#{service_id}/servers/#{server_id}"
+    request :delete, "/services/#{service_id}/servers/#{server_id}"
   end
 
   # List the installed SSL certs
   def certs
-    get '/certs'
+    request :get, '/certs'
   end
 
   # Register an SSL cert with the http router
@@ -94,26 +94,26 @@ class Portal::Client
   #   cert: Certificate cert as a raw string (unencoded)
   #   key: Certificate key as a raw string (unencoded)
   def register_cert(cert)
-    post '/certs', cert
+    request :post, '/certs', cert
   end
 
   # Reset the registered certs
   #
   # certs: A list of certs, following the data above
   def reset_certs(certs=[])
-    put '/certs', certs
+    request :put, '/certs', certs
   end
 
   # Remove a cert from the router
   #
   # cert: Follows the format above
   def remove_cert(cert={})
-    delete '/certs', cert
+    request :delete, '/certs', cert
   end
 
   # List the registered http routes
   def routes
-    get '/routes'
+    request :get, '/routes'
   end
 
   # Register a new route to the http router
@@ -126,28 +126,28 @@ class Portal::Client
   #   fwdpath: Path to forward to targets (combined with target path)
   #   page: A page to render when Name and Path match (optional)
   def add_route(route={})
-    post '/routes', route
+    request :post, '/routes', route
   end
 
   # Reset the registered routes
   #
   # routes: A list of routes, following the data above
   def reset_routes(routes=[])
-    put '/routes', routes
+    request :put, '/routes', routes
   end
 
   # Remove a route from the router
   #
   # route: Follows the format above
   def remove_route(route={})
-    delete '/routes', route
+    request :delete, '/routes', route
   end
 
   # List the registered vips
   # $ curl -k -H "X-AUTH-TOKEN:" https://127.0.0.1:8443/vips
   # []
   def vips
-    get '/vips'
+    request :get, '/vips'
   end
 
   # Register a new vip with the http router
@@ -155,7 +155,7 @@ class Portal::Client
   #      -d '{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}'
   # [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
   def add_vip(vip={})
-    post '/vips', vip
+    request :post, '/vips', vip
   end
 
   # Reset the registered vips
@@ -166,7 +166,7 @@ class Portal::Client
   #      -X PUT
   # [{"ip":"192.168.0.100","interface":"eth0","alias":"eth0:1"}]
   def reset_vips(vips=[])
-    put '/vips', vips
+    request :put, '/vips', vips
   end
 
   # Remove a vip from the router
@@ -177,61 +177,41 @@ class Portal::Client
   #      -X DELETE
   # {"msg":"Success"}
   def remove_vip(vip={})
-    delete '/vips', vip
+    request :delete, '/vips', vip
   end
 
   protected
 
-  def get(path)
-    res = connection.get(path) do |req|
-      req.headers['X-AUTH-TOKEN'] = token
-    end
-
-    if res.status == 200
-      from_json(res.body) rescue ""
-    else
-      raise "#{res.status}:#{res.body}"
-    end
-  end
-
-  def post(path, payload)
-    res = connection.post(path) do |req|
+  def request(method, path, payload = {})
+    res = connection.send(method, path) do |req|
       req.headers['X-AUTH-TOKEN'] = token
       req.body = to_json(payload)
     end
 
-    if res.status == 200
-      from_json(res.body) rescue ""
-    else
-      raise "#{res.status}:#{res.body}"
-    end
+    process_response(res)
+  rescue Faraday::ClientError => e
+    raise ::Portal::ConnectionError, e.message
   end
 
-  def put(path, payload)
-    res = connection.put(path) do |req|
-      req.headers['X-AUTH-TOKEN'] = token
-      req.body = to_json(payload)
-    end
+  def process_response(res)
+    status_body = "#{res.status}:#{res.body}"
 
-    if res.status == 200
-      from_json(res.body) rescue ""
+    if res.status >= 200 && res.status < 300
+      from_json(res.body)
+    elsif res.status >= 300 && res.status < 400
+      raise ::Portal::RedirectionError, status_body
+    elsif res.status == 401
+      raise ::Portal::UnauthorizedError, status_body
+    elsif res.status == 404
+      raise ::Portal::NotFoundError, status_body
+    elsif res.status >= 400 && res.status < 500
+      # e.g. 400:{"error":"Port Already In Use"}
+      raise ::Portal::ClientError, status_body
+    elsif res.status >= 500
+      raise ::Portal::ServerError, status_body
     else
-      raise "#{res.status}:#{res.body}"
-    end
-  end
-
-  def delete(path, payload={})
-    res = connection.delete(path) do |req|
-      req.headers['X-AUTH-TOKEN'] = token
-      if payload
-        req.body = to_json(payload)
-      end
-    end
-
-    if res.status == 200
-      true
-    else
-      raise "#{res.status}:#{res.body}"
+      # This should be an edge-case. All known statuses should be handled.
+      fail status_body
     end
   end
 
@@ -257,5 +237,4 @@ class Portal::Client
   def from_json(data)
     JSON.parse(data)
   end
-
 end
