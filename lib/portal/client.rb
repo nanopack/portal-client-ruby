@@ -125,6 +125,14 @@ class Portal::Client
   #   targets: List of locations to forward the request
   #   fwdpath: Path to forward to targets (combined with target path)
   #   page: A page to render when Name and Path match (optional)
+  #
+  #   endpoint: Path to check for health (non blank enables health checks)
+  #   expected_code: Expected http response code (default 200)
+  #   expected_body: Expected body
+  #   expected_header: Expected http header (field:value)
+  #   host: 'Host' header to use when performing health check
+  #   timeout: Milliseconds before connection times out (default 3000 (3s))
+  #   attempts: Number of times to try before marking dead
   def add_route(route={})
     request :post, '/routes', route
   end
