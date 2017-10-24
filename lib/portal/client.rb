@@ -216,10 +216,11 @@ class Portal::Client
   end
 
   def connection
-    @connection ||= ::Faraday.new({
+    @connection ||= ::Faraday.new(
       url: url,
-      :ssl => {:verify => false}
-    })
+      ssl: { verify: false },
+      request: { timeout: 10 }
+    )
   end
 
   def url
